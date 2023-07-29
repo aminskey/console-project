@@ -1,0 +1,12 @@
+The game Rocket Jump is a simple game
+based off of the original Flappy Bird game
+It's quite simple as you only have to dodge the incoming
+pillars and survive for as long as you can. 
+
+Although the game is quite simple,
+it's not as easy as you think.
+The top record for this game is 170
+
+See if you can do better!
+
+Good Luck!!

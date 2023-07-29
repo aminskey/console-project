@@ -1,0 +1,6 @@
+gamefile=main.py
+preview-video=vid.mp4
+preview-bg=songs/level.ogg
+name=Rocket Jump
+description-file=read.txt
+rom-img=cover.png
