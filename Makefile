@@ -1,10 +1,10 @@
 CC = gcc
-CFLAGS = -g
+CFLAGS = -g 
 LDFLAGS = $(shell pkg-config --cflags --libs libsystemd)
-SRC = src
-BIN = bin
-LIBS = libs
-HEADERS = headers
+SRC = ./src
+BIN = ./bin
+LIBS = ./libs
+HEADERS = ./headers
 
 all: clean mount_daemon run
 
@@ -13,6 +13,9 @@ mount_daemon: $(SRC)/mount_daemon.c $(LIBS)/*.o | $(BIN)
 
 $(LIBS)/ipc.o: $(HEADERS)/*.c 
 	$(CC) -c $^ $(CFLAGS) -o $@ 
+
+$(BIN)/serverExample: $(SRC)/server.c $(LIBS)/ipc.o | $(BIN)
+	$(CC) $^ $(CFLAGS) -I$(HEADERS) -o $@
 
 run: 
 	$(BIN)/mount_daemon

@@ -12,11 +12,7 @@
 #define SUNPATH_SIZE 128
 
 
-/*
- * Conn its self is 110 bytes
- * saddr.sun_path is 128 bytes
- * REWRITE: make sure that saddr is a pointer and not embedded in Conn!!
- * **/
+
 Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path){
     
     Conn *tmp = (Conn *)malloc(sizeof(Conn));
@@ -24,9 +20,9 @@ Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path){
    
     tmp->saddr = (struct sockaddr_un *) malloc(sizeof(struct sockaddr_un));
 
-    // memset(&tmp->saddr, 0, sizeof(struct sockaddr_un));
+    memset(tmp->saddr, 0, sizeof(struct sockaddr_un));
     tmp->saddr->sun_family = sun_fam;
-    memcpy(tmp->saddr->sun_path, sun_path, SUNPATH_SIZE);
+    strcpy(tmp->saddr->sun_path, sun_path);
 
     return tmp;
 }

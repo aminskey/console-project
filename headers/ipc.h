@@ -10,4 +10,12 @@ typedef struct {
     struct sockaddr_un *saddr;
 } Conn;
 
+// High level API
+Conn *serverOpen(char *sock_file);
+int serverClose(Conn *c);
+
+// Low-level API
+Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path);
+void freeConnection(Conn *c);
+
 #endif
