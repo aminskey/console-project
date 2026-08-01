@@ -3,7 +3,7 @@ I am creating a game console that is supposed to resemble the Sega CD, PS2, and 
 
 It will read USB devices and run games stored on them. 
 
-In the meantime, the user will be greeted with a UI, which will prompt the user to "Enter a device/game".
+In the meantime, the user will be greeted with a UI, which will prompt them to "Enter a device/game".
 
 ### TODOs
 - Make IPC server run on TCP (Unix domain socket)
