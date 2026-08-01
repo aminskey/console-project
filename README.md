@@ -9,7 +9,7 @@ In the meantime, the user will be greeted with a UI, which will prompt the user 
 - Make IPC server run on TCP (Unix domain socket)
 - Give the game launching control/responsibility to a third entity
 - Design the UI and control it via pygame (Python)
-- Make all parties communicate via JSON
+- Make all processes communicate via JSON (IPC)
 
 ### Ambitious goals
 - Use input masking for games that only take keyboard input. E.g., transforming joystick input into keyboard keys.
