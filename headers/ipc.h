@@ -7,7 +7,7 @@
 
 typedef struct {
     int fd;
-    struct sockaddr_un saddr;
+    struct sockaddr_un *saddr;
 } Conn;
 
 #endif
