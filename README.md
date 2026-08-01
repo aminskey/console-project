@@ -8,7 +8,7 @@ In the meantime, the user will be greeted with a UI, which will prompt the user 
 ### TODOs
 - Make IPC server run on TCP (Unix domain socket)
 - Give the game launching control/responsibility to a third entity
-- Design the UI
+- Design the UI and control it via pygame (Python)
 - Make all parties communicate via JSON
 
 ### Ambitious goals
