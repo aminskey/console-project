@@ -9,10 +9,9 @@
 
 #include "ipc.h"
 
-#define SUNPATH_SIZE 128
+#define SUNPATH_SIZE 108
 
-
-
+/* Standard UDP implementation */
 Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path){
     
     Conn *tmp = (Conn *)malloc(sizeof(Conn));
@@ -22,7 +21,7 @@ Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path){
 
     memset(tmp->saddr, 0, sizeof(struct sockaddr_un));
     tmp->saddr->sun_family = sun_fam;
-    strcpy(tmp->saddr->sun_path, sun_path);
+    strncpy(tmp->saddr->sun_path, sun_path, SUNPATH_SIZE);
 
     return tmp;
 }
@@ -49,8 +48,8 @@ int serverClose(Conn *c){
     return 0;
 }
 
-Conn* serverOpen(char *sock_file){
-    int fd = socket(AF_UNIX, SOCK_DGRAM, 0);
+Conn* serverOpen(char *sock_file, int sock_type){
+    int fd = socket(AF_UNIX, sock_type, 0);
     if(fd == -1) { 
         perror("Cannot create socket :(");
         return NULL; 
@@ -71,3 +70,10 @@ Conn* serverOpen(char *sock_file){
 
     return connection;
 }
+
+
+/*
+ *
+ * Expand for TCP if needed...
+ *
+ */

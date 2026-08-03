@@ -11,7 +11,7 @@ typedef struct {
 } Conn;
 
 // High level API
-Conn *serverOpen(char *sock_file);
+Conn *serverOpen(char *sock_file, int sock_type);
 int serverClose(Conn *c);
 
 // Low-level API

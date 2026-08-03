@@ -24,7 +24,7 @@ static void handle_sigint(int sig){
 // Entry point
 int main(void){
     // Create the server socket and bind!
-    serverConn = serverOpen(SOCK_FILE);
+    serverConn = serverOpen(SOCK_FILE, SOCK_DGRAM);
     signal(SIGINT, handle_sigint);
     signal(SIGABRT, handle_sigint);
 
