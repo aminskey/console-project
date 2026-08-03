@@ -34,7 +34,7 @@ int main(void){
         return -1;
     }
 
-    // We are running a datagram/UDP server by default
+    // We are running a datagram/UDP server
     // so no need to listen or accept!
     while(1){
         char buff[BUFF_MAX];

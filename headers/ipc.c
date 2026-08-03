@@ -5,9 +5,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <errno.h>
+#include <sys/poll.h>
 
 #include "ipc.h"
+
 
 #define SUNPATH_SIZE 108
 
@@ -25,6 +26,8 @@ Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path){
 
     return tmp;
 }
+
+
 
 void freeConnection(Conn *c){
     free(c->saddr);
@@ -71,9 +74,18 @@ Conn* serverOpen(char *sock_file, int sock_type){
     return connection;
 }
 
-
 /*
  *
- * Expand for TCP if needed...
+ * Expand for TCP
  *
  */
+struct pollfd *TCPserverSetPoll(Conn *c, int max, short event){
+    struct pollfd *fds = (struct pollfd *)malloc(sizeof(struct pollfd) * max + 1);
+    
+    fds[0].fd = c->fd;
+    fds[0].events = event;
+
+    return fds;
+}
+
+

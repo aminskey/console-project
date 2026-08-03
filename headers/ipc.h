@@ -10,6 +10,12 @@ typedef struct {
     struct sockaddr_un *saddr;
 } Conn;
 
+typedef struct {
+    struct pollfd *fds;
+    int max_clients;
+    int nfds;
+} Clients;
+
 // High level API
 Conn *serverOpen(char *sock_file, int sock_type);
 int serverClose(Conn *c);
