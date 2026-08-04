@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <poll.h>
+
 
 typedef struct {
     int fd;
@@ -11,9 +13,10 @@ typedef struct {
 } Conn;
 
 typedef struct {
-    struct pollfd *fds;
     int max_clients;
-    int nfds;
+    int timeout;
+    nfds_t nfds;
+    struct pollfd *fds;
 } Clients;
 
 // High level API

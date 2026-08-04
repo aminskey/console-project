@@ -79,13 +79,25 @@ Conn* serverOpen(char *sock_file, int sock_type){
  * Expand for TCP
  *
  */
-struct pollfd *TCPserverSetPoll(Conn *c, int max, short event){
-    struct pollfd *fds = (struct pollfd *)malloc(sizeof(struct pollfd) * max + 1);
-    
-    fds[0].fd = c->fd;
-    fds[0].events = event;
 
-    return fds;
+Clients *newTCPClients(Conn *c, int max_clients, int timeout) {
+    // Allocating in memory
+    Clients *cs = (Clients *)malloc(sizeof(Client));
+    cs->fds = (struct pollfd *)calloc(max_clients + 1, sizeof(struct pollfd));
+
+    // Setting main listening socket:
+    // This is exactly the same as 
+    // cs->fds[0].fd = c->fd;
+    cs->fds->fd = c->fd;
+    cs->fds->events = POLLIN;
+
+    // Filling in values
+    //cs->fds = c->fd;
+    cs->nfds = 1;
+    cs->max_clients = max_clients;
+    cs->timeout = timeout;
+
+    // Returning newly built struct
+    return cs;
 }
-
 
