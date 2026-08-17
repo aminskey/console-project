@@ -80,9 +80,9 @@ Conn* serverOpen(char *sock_file, int sock_type){
  *
  */
 
-Clients *newTCPClients(Conn *c, int max_clients, int timeout) {
+Clients *newTCPClients(Conn *c, int max_clients, int timeout_us) {
     // Allocating in memory
-    Clients *cs = (Clients *)malloc(sizeof(Client));
+    Clients *cs = (Clients *)malloc(sizeof(Clients));
     cs->fds = (struct pollfd *)calloc(max_clients + 1, sizeof(struct pollfd));
 
     // Setting main listening socket:
@@ -95,9 +95,17 @@ Clients *newTCPClients(Conn *c, int max_clients, int timeout) {
     //cs->fds = c->fd;
     cs->nfds = 1;
     cs->max_clients = max_clients;
-    cs->timeout = timeout;
+    cs->timeout = timeout_us;
 
     // Returning newly built struct
     return cs;
+}
+
+void freeClients(Clients *c){
+    free(c->fds);
+    free(c);
+
+    c->fds = NULL;
+    c = NULL;
 }
 

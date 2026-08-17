@@ -25,6 +25,9 @@ int serverClose(Conn *c);
 
 // Low-level API
 Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path);
+Clients *newTCPClients(Conn *c, int max_clients, int timeout_us);
+
 void freeConnection(Conn *c);
+void freeClients(Clients *c);
 
 #endif
