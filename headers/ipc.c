@@ -101,6 +101,44 @@ Clients *newTCPClients(Conn *c, int max_clients, int timeout_us) {
     return cs;
 }
 
+int pollRoom(Clients *c) {
+    // Poll all fds and check which one is ready
+    int ready = poll(c->fds, c->nfds, c->timeout);
+    
+    // If none are ready then exit
+    if(ready == -1) return ready;
+
+    // Assuming all are ready, check for new clients
+    if(c->fds[0].revents & POLLIN) {
+        int cfd = accept(c->fds->fd, NULL, NULL);
+        
+        // If we cannot accept the new client then err
+        if(cfd == -1)
+            return -1;
+
+        // try to add new client
+        if(c->nfds < c->max_clients){
+            c->nfds += 1;
+            c->fds[c->nfds].fd = cfd;
+            c->fds[c->nfds].events = POLLIN;
+        }
+
+        // Warn about capacity overload
+        else {
+            perror("Cannot accept new client, max capacity reached !!\n");
+            return 1;
+        }
+    }
+
+    return ready;
+}
+
+void broadcast(Clients *c, const char *s) {
+    for(int i = 0; i < c->nfds; i++) {
+        write(c->fds[i].fd, s, strlen(s));
+    }
+}
+
 void freeClients(Clients *c){
     free(c->fds);
     free(c);

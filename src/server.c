@@ -12,8 +12,9 @@
 #define SOCK_FILE "/tmp/gamelauncher.sock"
 #define BUFF_MAX 1024
 #define MAX_CLIENTS 10
+#define TIMEOUT_MS 200
 
-Conn *serverConn = NULL;
+Conn *serverConn;
 
 static void handle_sigint(int sig){
     serverClose(serverConn);
@@ -24,7 +25,8 @@ static void handle_sigint(int sig){
 // Entry point
 int main(void){
     // Create the server socket and bind!
-    serverConn = serverOpen(SOCK_FILE, SOCK_DGRAM);
+    serverConn = serverOpen(SOCK_FILE, SOCK_STREAM);
+    Clients *room = newTCPClients(serverConn, MAX_CLIENTS, TIMEOUT_MS);
     signal(SIGINT, handle_sigint);
     signal(SIGABRT, handle_sigint);
 
@@ -34,23 +36,17 @@ int main(void){
         return -1;
     }
 
-    // We are running a datagram/UDP server
-    // so no need to listen or accept!
-    while(1){
-        char buff[BUFF_MAX];
-        struct sockaddr_un client;
-        socklen_t clientLen = sizeof(client);
-
-        memset(buff, '\0', BUFF_MAX);
-        ssize_t n = recvfrom(serverConn->fd, &buff, BUFF_MAX - 1, MSG_WAITALL, (struct sockaddr *) &client, &clientLen);
-        
-        if(n >= 0){
-            buff[n] = '\0';
-            printf("Recieved from client: %s\n", buff);
-        }
-
+    // Be prepared to listen
+    if(listen(serverConn->fd, MAX_CLIENTS) == -1){
+        perror("Cannot listen on socket");
+        return -1;
     }
 
+    while(1){
+        int ready = pollRoom(room); 
+    }
+
+    freeClients(room);
     serverClose(serverConn);
 
     return 0;

@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <poll.h>
+#include <threads.h>
 
 
 typedef struct {
@@ -26,6 +27,9 @@ int serverClose(Conn *c);
 // Low-level API
 Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path);
 Clients *newTCPClients(Conn *c, int max_clients, int timeout_us);
+
+int pollRoom(Clients *c);
+void broadcast(Clients *c, const char *s);
 
 void freeConnection(Conn *c);
 void freeClients(Clients *c);
