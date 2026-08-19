@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <unistd.h>
 #include <signal.h>
 
+#include <asm/termbits.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/poll.h>
+#include <sys/ioctl.h>
 
 #include <ipc.h>
 
@@ -43,7 +47,39 @@ int main(void){
     }
 
     while(1){
-        int ready = pollRoom(room); 
+        int ready = pollRoom(room);
+        if(ready < 0) continue;
+
+
+        for(int i = 1; i < room->nfds; i++){
+            if(room->fds[i].revents & POLLIN){
+                char buff[BUFF_MAX];
+                bzero(buff, BUFF_MAX);
+
+                int len = 0;
+                ioctl(room->fds[i].fd, FIONREAD, &len);
+
+                if(len > 0){                
+                    if(read(room->fds[i].fd, buff, len) == -1) {
+                        perror("Cannot read from socket :(\n");
+                    } else {
+                        printf("> From client.fd(%d): %s\n", room->fds[i].fd, buff);
+                        room->fds[i].events |= POLLOUT;
+                    }
+                }
+            }
+
+            if(room->fds[i].revents & POLLOUT) {
+                char *msg = "Hello from server!";
+                write(room->fds[i].fd, msg, strlen(msg));
+                room->fds[i].events &= ~POLLOUT;
+            }
+
+            // if(room->fds[i].revents & POLLHUP) {
+            //     printf(">Client.fd(%d) tried to hang up\n", room->fds[i].fd);
+            //     room->fds[i].revents = POLLERR;
+            // }
+        }
     }
 
     freeClients(room);

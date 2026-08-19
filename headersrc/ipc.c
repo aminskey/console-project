@@ -89,7 +89,7 @@ Clients *newTCPClients(Conn *c, int max_clients, int timeout_us) {
     // This is exactly the same as 
     // cs->fds[0].fd = c->fd;
     cs->fds->fd = c->fd;
-    cs->fds->events = POLLIN;
+    cs->fds->events = POLLIN | POLLOUT | POLLHUP;
 
     // Filling in values
     //cs->fds = c->fd;
@@ -118,9 +118,9 @@ int pollRoom(Clients *c) {
 
         // try to add new client
         if(c->nfds < c->max_clients){
-            c->nfds += 1;
             c->fds[c->nfds].fd = cfd;
             c->fds[c->nfds].events = POLLIN;
+            c->nfds += 1;
         }
 
         // Warn about capacity overload
@@ -128,7 +128,12 @@ int pollRoom(Clients *c) {
             perror("Cannot accept new client, max capacity reached !!\n");
             return 1;
         }
+
+        printf("> Accepted new client\n");
+        printf("   fd-number: %d\n", c->fds[c->nfds].fd);
+        printf("   Current number of clients: %lu\n\n", c->nfds);
     }
+
 
     return ready;
 }

@@ -7,18 +7,20 @@
 #include <poll.h>
 #include <threads.h>
 
-
+// Structure for a connection
 typedef struct {
     int fd;
     struct sockaddr_un *saddr;
 } Conn;
 
+// Client array
 typedef struct {
     int max_clients;
     int timeout;
     nfds_t nfds;
     struct pollfd *fds;
 } Clients;
+
 
 // High level API
 Conn *serverOpen(char *sock_file, int sock_type);
@@ -33,5 +35,7 @@ void broadcast(Clients *c, const char *s);
 
 void freeConnection(Conn *c);
 void freeClients(Clients *c);
+
+
 
 #endif

@@ -1,27 +1,34 @@
 CC = gcc
-CFLAGS = -g 
+CFLAGS = -g -lm -fPIC 
 LDFLAGS = $(shell pkg-config --cflags --libs libsystemd)
 SRC = ./src
 BIN = ./bin
 LIBS = ./libs
+OBJS = ./obj
 HEADERS = ./headers
+HEADERSRC = ./headersrc
+#OBJECTS = $(patsubst $()) 
 
-all: clean mount_daemon run
+all: clean mount_daemon
 
-mount_daemon: $(SRC)/mount_daemon.c $(LIBS)/*.o | $(BIN)
+mount_daemon: $(SRC)/mount_daemon.c $(LIBS)/*.so | $(BIN)
 	$(CC) $^ $(CFLAGS)  -I$(HEADERS) $(LDFLAGS) -o $(BIN)/mount_daemon
 
-$(LIBS)/ipc.o: $(HEADERS)/*.c 
-	$(CC) -c $^ $(CFLAGS) -o $@ 
+$(OBJS)/%.o: $(HEADERSRC)/%.c
+	$(CC) -c $< $(CFLAGS) -I$(HEADERS) -o $@
 
-$(BIN)/serverExample: $(SRC)/server.c $(LIBS)/ipc.o | $(BIN)
-	$(CC) $^ $(CFLAGS) -I$(HEADERS) -o $@
+$(OBJS): $(OBJECTS)
 
-run: 
-	$(BIN)/mount_daemon
+$(LIBS)/libipc.so: $(OBJS)/*.o 
+	$(CC) -shared $^ -o $@
+
+$(BIN)/serverExample: $(SRC)/server.c $(LIBS)/*.so | $(BIN)
+	$(CC) $^ $(CFLAGS) -I$(HEADERS) -L$(LIBS) -o $@
+
 
 clean:
 	rm -rf $(BIN)/*
+	rm -rf $(OBJS)/*
 	rm -rf vgcore*
 
-.PHONY: all clean run mount_daemon
+.PHONY: all clean mount_daemon
