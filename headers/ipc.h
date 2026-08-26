@@ -13,12 +13,17 @@ typedef struct {
     struct sockaddr_un *saddr;
 } Conn;
 
+// The table structure
+typedef struct {
+    struct pollfd **fds;
+    nfds_t nfds;
+    nfds_t max_cap;
+} table_t;
+
 // Client array
 typedef struct {
-    int max_clients;
-    int timeout;
-    nfds_t nfds;
-    struct pollfd *fds;
+    table_t *table;
+    uint timeout_us;
 } Clients;
 
 
@@ -28,14 +33,12 @@ int serverClose(Conn *c);
 
 // Low-level API
 Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path);
-Clients *newTCPClients(Conn *c, int max_clients, int timeout_us);
+table_t *new_table(int size);
+void free_table(table_t **t);
 
-int pollRoom(Clients *c);
-void broadcast(Clients *c, const char *s);
-
-void freeConnection(Conn *c);
-void freeClients(Clients *c);
-
+int insert(table_t *t, struct pollfd *p);
+int search(table_t *t, int fd);
+int delete(table_t *t, struct pollfd *p);
 
 
 #endif

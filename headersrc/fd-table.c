@@ -5,6 +5,7 @@
 #include <errno.h>
 
 #include <sys/poll.h>
+#include "../headers/ipc.h"
 
 // defining tombstone
 struct pollfd tombstone = {
@@ -13,18 +14,11 @@ struct pollfd tombstone = {
     .fd = -1,
 };
 
-// The table structure
-typedef struct {
-    struct pollfd **fds;
-    nfds_t nfds;
-    nfds_t max_cap;
-} table_t;
-
 
 // Fibonacci hashing
 unsigned long hash(int fd) {
     double A = 0.6810339;
-    return (unsigned long) floor((double)rand() * ((double)fd*A - floor((double) fd * A)));
+    return (unsigned long) floor((double) 6 * ((double)fd*A - floor((double) fd * A)));
 }
 
 // Instantiate a new table
@@ -65,34 +59,93 @@ void free_table(table_t **t) {
 }
 
 int search(table_t *t, int fd) {
+    // Starting index
     int s_index = (int) hash(fd) % (int) t->max_cap;
+    
+    // Iterator index
     int i = s_index;
-    
-    // TODO: Account for tombstones and NULL
-    for(; t->fds[i]->fd != fd; i++){
-        if(i == t->max_cap)
-            i = 0;
-    
-        if(i == s_index - 1)
-            return -1;
-    }
 
-    return i; 
+    // Start searching
+    do{
+        // Is the slot NULL?
+        if(!t->fds[i])
+            // If so, return -1;
+            return -1;
+        
+        // Do the file descriptors match?
+        if(t->fds[i]->fd == fd)
+            // return the found index
+            return i;
+
+        // Iterate all slots and wraparound table
+        i = (i+1) % t->max_cap;
+    // Are we back at where we started
+    }while(i != s_index);
+
+    // err since nothing was found
+    return -1; 
 }
 
 int insert(table_t *t, struct pollfd *p) {
 
+    // Do the pointers exist?
+    if(!t || !p)
+        return -1;
+
+    // Is there enough space to add a new entry?
+    if(t->max_cap == 0 || t->nfds == t->max_cap)
+        return -1;
+
+    // Get the start index and set the iterator i
     int s_index = (int) hash(p->fd) % (int) t->max_cap;
     int i = s_index;
+   
+    // Linear poll the hash table until
+    // the statement is false
+    while(t->fds[i] && t->fds[i] != &tombstone){
+        // Check next slot
+        i = (i + 1) % t->max_cap;
 
-    for(; t->fds[i] != NULL || t->fds[i]->fd != tombstone.fd; i++){
-        if(i == t->max_cap)
-            i = 0;
-
-        if(i == s_index - 1)
+        // fail once we wraparound entirely
+        // without finding anything
+        if(i == s_index)
             return -1;
     }
 
+    // Assign p to empty slot
     t->fds[i] = p;
+    t->nfds++;
+
+    // return index of slot
+    return i;
+}
+
+struct pollfd *table_to_array(table_t *t) {
+    struct pollfd *arr = (struct pollfd *)calloc(1, t->nfds);
+    
+    for(int j = 0, i = 0; i < t->max_cap; i++) {
+        if(t->fds[i] && t->fds[i] != &tombstone)
+            arr[j++] = *(t->fds[i]);
+    }
+
+    return arr;
+}
+
+// return index of deleted item or -1
+int delete(table_t *t, struct pollfd *p) {
+    // Try and find the pollfd via fd
+    int i = search(t, p->fd);
+
+    // If it doesn't exist return -1
+    if(i == -1)
+        return -1;
+
+    // Place a tombstone
+    t->fds[i] = &tombstone;
+    
+    // decrease number of fds
+    t->nfds--;
+
+    // return index of deleted item
     return i;
 }

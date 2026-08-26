@@ -7,7 +7,8 @@ LIBS = ./libs
 OBJS = ./obj
 HEADERS = ./headers
 HEADERSRC = ./headersrc
-#OBJECTS = $(patsubst $()) 
+ALLSRC = $(wildcard ./headersrc/*.c)
+OBJECTS = $(patsubst $(HEADERSRC)/%.c, $(OBJS)/%.o, $(ALLSRC)) 
 
 all: clean mount_daemon
 

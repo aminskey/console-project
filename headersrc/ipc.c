@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <strings.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,10 +8,15 @@
 #include <sys/un.h>
 #include <sys/poll.h>
 
-#include "ipc.h"
+#include "../headers/ipc.h"
 
 
 #define SUNPATH_SIZE 108
+
+// This is the main socket for connections
+int ms_index = 0;
+
+extern struct pollfd *table_to_array(table_t *);
 
 /* Standard UDP implementation */
 Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path){
@@ -80,75 +86,78 @@ Conn* serverOpen(char *sock_file, int sock_type){
  *
  */
 
-Clients *newTCPClients(Conn *c, int max_clients, int timeout_us) {
-    // Allocating in memory
-    Clients *cs = (Clients *)malloc(sizeof(Clients));
-    cs->fds = (struct pollfd *)calloc(max_clients + 1, sizeof(struct pollfd));
+table_t *setupTable(Conn *c, int max_clients) {
+    struct pollfd *p = (struct pollfd*) malloc(sizeof(struct pollfd));
+    table_t *table = new_table(max_clients);
 
-    // Setting main listening socket:
-    // This is exactly the same as 
-    // cs->fds[0].fd = c->fd;
-    cs->fds->fd = c->fd;
-    cs->fds->events = POLLIN | POLLOUT | POLLHUP;
+    bzero(p, sizeof(struct pollfd));
 
-    // Filling in values
-    //cs->fds = c->fd;
-    cs->nfds = 1;
-    cs->max_clients = max_clients;
-    cs->timeout = timeout_us;
+    p->fd = c->fd;
+    p->events = POLLIN | POLLOUT | POLLHUP;
 
-    // Returning newly built struct
-    return cs;
+    
+    ms_index = insert(table, p);
+    if(ms_index == -1) {
+        return NULL;
+    }
+
+    return table;
 }
 
-int pollRoom(Clients *c) {
+// TODO: REWRITE
+int poll_table(table_t *t, int timeout_us) {
     // Poll all fds and check which one is ready
-    int ready = poll(c->fds, c->nfds, c->timeout);
-    
+    int ready = poll(table_to_array(t), t->nfds, timeout_us);
+
     // If none are ready then exit
-    if(ready == -1) return ready;
+    if(ready == -1 || ms_index == -1) 
+        return -1;
 
     // Assuming all are ready, check for new clients
-    if(c->fds[0].revents & POLLIN) {
-        int cfd = accept(c->fds->fd, NULL, NULL);
-        
+    if(t->fds[ms_index]->revents & POLLIN) {
+        int cfd = accept(t->fds[ms_index]->fd, NULL, NULL);
+
         // If we cannot accept the new client then err
         if(cfd == -1)
             return -1;
 
-        // try to add new client
-        if(c->nfds < c->max_clients){
-            c->fds[c->nfds].fd = cfd;
-            c->fds[c->nfds].events = POLLIN;
-            c->nfds += 1;
-        }
+        struct pollfd *tmp = (struct pollfd *) calloc(1, sizeof(struct pollfd));
+        tmp->fd = cfd;
+        tmp->events = POLLIN | POLLOUT | POLLHUP;
 
+        // // try to add new client
+        // if(c->nfds < t->max_cap){
+        //     c->fds[c->nfds].fd = cfd;
+        //     c->fds[c->nfds].events = POLLIN;
+        //     c->nfds += 1;
+        // }
+        //
         // Warn about capacity overload
-        else {
+        if(insert(t, tmp) < 0) {
             perror("Cannot accept new client, max capacity reached !!\n");
             return 1;
         }
 
         printf("> Accepted new client\n");
-        printf("   fd-number: %d\n", c->fds[c->nfds].fd);
-        printf("   Current number of clients: %lu\n\n", c->nfds);
+        printf("   fd-number: %d\n", cfd);
+        printf("   Current number of clients: %lu\n\n", t->nfds);
     }
 
 
     return ready;
 }
-
-void broadcast(Clients *c, const char *s) {
-    for(int i = 0; i < c->nfds; i++) {
-        write(c->fds[i].fd, s, strlen(s));
-    }
-}
-
-void freeClients(Clients *c){
-    free(c->fds);
-    free(c);
-
-    c->fds = NULL;
-    c = NULL;
-}
+//
+// void broadcast(Clients *c, const char *s) {
+//     for(int i = 0; i < c->nfds; i++) {
+//         write(c->fds[i].fd, s, strlen(s));
+//     }
+// }
+//
+// void freeClients(Clients *c){
+//     free(c->fds);
+//     free(c);
+//
+//     c->fds = NULL;
+//     c = NULL;
+// }
 
