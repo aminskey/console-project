@@ -16,7 +16,6 @@
 // This is the main socket for connections
 int ms_index = 0;
 
-extern struct pollfd *table_to_array(table_t *);
 
 /* Standard UDP implementation */
 Conn *newConnection(int fd, unsigned int sun_fam, char *sun_path){
@@ -86,54 +85,33 @@ Conn* serverOpen(char *sock_file, int sock_type){
  *
  */
 
-table_t *setupTable(Conn *c, int max_clients) {
-    struct pollfd *p = (struct pollfd*) malloc(sizeof(struct pollfd));
-    table_t *table = new_table(max_clients);
-
-    bzero(p, sizeof(struct pollfd));
-
-    p->fd = c->fd;
-    p->events = POLLIN | POLLOUT | POLLHUP;
-
-    
-    ms_index = insert(table, p);
-    if(ms_index == -1) {
-        return NULL;
-    }
-
-    return table;
-}
-
 // TODO: REWRITE
-int poll_table(table_t *t, int timeout_us) {
+int accept_new_clients(clients_t *t) {
     // Poll all fds and check which one is ready
-    int ready = poll(table_to_array(t), t->nfds, timeout_us);
+    int ready = poll(t->fds, t->nfds, t->timeout_us);
 
     // If none are ready then exit
     if(ready == -1 || ms_index == -1) 
         return -1;
 
     // Assuming all are ready, check for new clients
-    if(t->fds[ms_index]->revents & POLLIN) {
-        int cfd = accept(t->fds[ms_index]->fd, NULL, NULL);
+    if(t->fds[0].revents & POLLIN) {
+        int cfd = accept(t->fds[0].fd, NULL, NULL);
 
         // If we cannot accept the new client then err
-        if(cfd == -1)
+        if(cfd == -1){
+            printf("Cannot accept new client\n");
             return -1;
+        }
 
-        struct pollfd *tmp = (struct pollfd *) calloc(1, sizeof(struct pollfd));
-        tmp->fd = cfd;
-        tmp->events = POLLIN | POLLOUT | POLLHUP;
+        struct pollfd tmp = {
+            .fd = cfd,
+            .events = POLLIN | POLLHUP,
+            .revents = 0
+        };
 
-        // // try to add new client
-        // if(c->nfds < t->max_cap){
-        //     c->fds[c->nfds].fd = cfd;
-        //     c->fds[c->nfds].events = POLLIN;
-        //     c->nfds += 1;
-        // }
-        //
         // Warn about capacity overload
-        if(insert(t, tmp) < 0) {
+        if(push(t, tmp) < 0) {
             perror("Cannot accept new client, max capacity reached !!\n");
             return 1;
         }

@@ -11,6 +11,7 @@
 #include <sys/ioctl.h>
 
 #include <ipc.h>
+#include "../headers/ipc.h"
 
 // Define unix domain socket name
 #define SOCK_FILE "/tmp/gamelauncher.sock"
@@ -26,13 +27,27 @@ static void handle_sigint(int sig){
     exit(EXIT_SUCCESS);
 }
 
+static void handle_sigsegv(int sig) {
+    serverClose(serverConn);
+    printf("Failed due to SIGSEGV\n");
+    printf("Please check for\n");
+    printf("\t * dereferenced null pointers\n");
+    printf("\t * uninitialised memory\n");
+    printf("\t * non-existing memory that is being accessed\n");
+    exit(EXIT_FAILURE);
+}
+
 // Entry point
 int main(void){
     // Create the server socket and bind!
     serverConn = serverOpen(SOCK_FILE, SOCK_STREAM);
-    Clients *room = newTCPClients(serverConn, MAX_CLIENTS, TIMEOUT_MS);
+    clients_t *room = new_room(serverConn, MAX_CLIENTS, TIMEOUT_MS);
+    int ms_index = 0;
+
+    // Setting up handling for different signals
     signal(SIGINT, handle_sigint);
     signal(SIGABRT, handle_sigint);
+    signal(SIGSEGV, handle_sigsegv);
 
     // Validate connection
     if(!serverConn){
@@ -47,11 +62,13 @@ int main(void){
     }
 
     while(1){
-        int ready = pollRoom(room);
-        if(ready < 0) continue;
+        int ready = accept_new_clients(room);
+        
+        if(ready == -1) break; 
+        if(ready == 0) continue;
 
 
-        for(int i = 1; i < room->nfds; i++){
+        for(int i = 0; i < room->nfds; i++){
             if(room->fds[i].revents & POLLIN){
                 char buff[BUFF_MAX];
                 bzero(buff, BUFF_MAX);
@@ -75,14 +92,14 @@ int main(void){
                 room->fds[i].events &= ~POLLOUT;
             }
 
-            // if(room->fds[i].revents & POLLHUP) {
-            //     printf(">Client.fd(%d) tried to hang up\n", room->fds[i].fd);
-            //     room->fds[i].revents = POLLERR;
-            // }
+            if(room->fds[i].revents & POLLHUP) {
+                printf(">Client.fd(%d) tried to hang up\n", room->fds[i].fd);
+                remove_client(room, room->fds[i].fd);
+            }
         }
     }
 
-    freeClients(room);
+    free_room(&room);
     serverClose(serverConn);
 
     return 0;
